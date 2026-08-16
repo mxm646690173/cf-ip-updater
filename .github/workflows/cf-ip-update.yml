@@ -1,0 +1,34 @@
+name: CF优选IP自动更新
+
+on:
+  # 定时执行：每30分钟运行一次（源站每10分钟更新一次）
+  schedule:
+    - cron: '*/30 * * * *'
+  # 支持手动触发
+  workflow_dispatch:
+
+jobs:
+  update-ip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: 从源站获取电信优选IP并推送
+        env:
+          # cfnew API 完整地址（含路径）
+          # 格式: https://your-worker.workers.dev/{UUID或自定义路径}/api/preferred-ips
+          CFNEW_URL: ${{ secrets.CFNEW_URL }}
+          CFNEW_PORT: ${{ secrets.CFNEW_PORT || '443' }}
+          CFNEW_NAME: ${{ secrets.CFNEW_NAME || 'ip优选' }}
+        run: |
+          python update_ip.py
