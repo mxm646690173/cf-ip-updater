@@ -5,7 +5,7 @@
 ## 工作流程
 
 ```
-定时触发 (每30分钟)
+定时触发 (每6小时)
     ↓
 爬取 api.uouin.com/cloudflare.html
     ↓
@@ -17,7 +17,7 @@ POST → cfnew API (/api/preferred-ips)
 ## 必要条件
 
 1. 已部署 [cfnew](https://github.com/byJoey/cfnew) 项目到 Cloudflare Workers
-2. **已在 cfnew 后台开启「允许API管理」**（访问 `你的Worker地址` 找到开关并开启）
+2. **已在 cfnew 后台开启「允许API管理」**（访问你的 Worker 地址 `/` 找到开关并开启）
 3. 知道你的 cfnew Worker 完整地址
 
 ## 使用方式
@@ -32,7 +32,7 @@ POST → cfnew API (/api/preferred-ips)
 
 | Secret 名称 | 说明 | 示例 |
 |---|---|---|
-| `CFNEW_URL` | **必填**。cfnew API 完整地址，格式为 `https://你的worker域名/{UUID}/api/preferred-ips` | `你的Worker地址/api/preferred-ips` |
+| `CFNEW_URL` | **必填**。cfnew API 完整地址，格式为 `https://你的worker域名/{UUID}/api/preferred-ips` | `https://你的worker.workers.dev/你的UUID/api/preferred-ips` |
 
 可选 Secret（不设置则使用默认值）：
 
@@ -45,18 +45,7 @@ POST → cfnew API (/api/preferred-ips)
 
 进入 **Actions** 标签页，点击 **"I understand my workflows, go ahead and enable them"**。
 
-之后 Workflow 会每30分钟自动运行一次，你也可以在 Actions 页面手动触发运行。
-
-## 手动测试
-
-```bash
-# 本地测试爬取
-python update_ip.py
-
-# 设置环境变量后推送测试
-export CFNEW_URL="你的Worker地址/api/preferred-ips"
-python update_ip.py
-```
+之后 Workflow 会每6小时自动运行一次，你也可以在 Actions 页面手动触发运行。
 
 ## 相关项目
 
