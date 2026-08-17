@@ -28,7 +28,14 @@ jobs:
         env:
           CFNEW_URL: ${{ secrets.CFNEW_URL }}
           CFNEW_PORT: ${{ secrets.CFNEW_PORT || '443' }}
-          CFNEW_NAME: ${{ secrets.CFNEW_NAME || 'ip优选' }}
           WAIT_TIMEOUT: ${{ secrets.WAIT_TIMEOUT || '90' }}
         run: |
           python update_ip.py
+
+      - name: 提交状态文件（记录运行次数）
+        run: |
+          git config user.name "cf-ip-updater[bot]"
+          git config user.email "cf-ip-updater[bot]@users.noreply.github.com"
+          git add state.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: 更新运行状态 [skip ci]"
+          git push

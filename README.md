@@ -2,18 +2,23 @@
 
 自动从 [api.uouin.com/cloudflare.html](https://api.uouin.com/cloudflare.html) 获取**电信线路**的第一条优选IP，并通过 [cfnew](https://github.com/byJoey/cfnew) API 推送到你的 Cloudflare Worker。
 
+## 运行逻辑
+
+- **每天第1次运行**：先清空 cfnew 中所有优选IP，再添加新获取的IP
+- **同天后续运行**：直接添加新IP，不再清空
+- **节点命名**：`YYYY-MM-DD-N`（日期-当日第N次获取）
+
 ## 工作流程
 
 ```
 定时触发 (每6小时)
     ↓
-Playwright 无头浏览器访问页面
+判断是否当天第1次运行
     ↓
-等待 30-90 秒至数据刷新
+是 → 清空所有优选IP → 获取新IP → 添加
+否 → 直接获取新IP → 添加
     ↓
-提取电信线路第一条优选IP
-    ↓
-POST → cfnew API (/api/preferred-ips)
+节点名称: {日期}-{次数}
 ```
 
 ## 必要条件
@@ -34,14 +39,14 @@ POST → cfnew API (/api/preferred-ips)
 
 | Secret 名称 | 说明 | 示例 |
 |---|---|---|
-| `CFNEW_URL` | **必填**。cfnew API 完整地址，格式为 `https://你的worker域名/{UUID}/api/preferred-ips` | `https://你的worker.workers.dev/你的UUID/api/preferred-ips` |
+| `CFNEW_URL` | **必填**。cfnew API 完整地址 | `https://你的worker.workers.dev/你的UUID/api/preferred-ips` |
 
 可选 Secret（不设置则使用默认值）：
 
 | Secret 名称 | 默认值 | 说明 |
 |---|---|---|
 | `CFNEW_PORT` | `443` | 优选IP端口 |
-| `CFNEW_NAME` | `ip优选` | 节点名称 |
+| `WAIT_TIMEOUT` | `90` | 等待页面数据刷新最大秒数 |
 
 ### 3. 启用 Workflow
 
