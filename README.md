@@ -7,7 +7,9 @@
 ```
 定时触发 (每6小时)
     ↓
-爬取 api.uouin.com/cloudflare.html
+Playwright 无头浏览器访问页面
+    ↓
+等待 30-90 秒至数据刷新
     ↓
 提取电信线路第一条优选IP
     ↓
