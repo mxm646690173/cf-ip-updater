@@ -19,16 +19,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 安装依赖
+      - name: 安装 Playwright + Chromium
         run: |
-          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install chromium
 
       - name: 从源站获取电信优选IP并推送
         env:
-          # cfnew API 完整地址（含路径）
-          # 格式: https://your-worker.workers.dev/{UUID或自定义路径}/api/preferred-ips
           CFNEW_URL: ${{ secrets.CFNEW_URL }}
           CFNEW_PORT: ${{ secrets.CFNEW_PORT || '443' }}
           CFNEW_NAME: ${{ secrets.CFNEW_NAME || 'ip优选' }}
+          WAIT_TIMEOUT: ${{ secrets.WAIT_TIMEOUT || '90' }}
         run: |
           python update_ip.py
