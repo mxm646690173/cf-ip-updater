@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-CF优选IP自动更新脚本
-1. 自动拼接 API 路径
-2. 每日清空 + 批量添加 (含筛选)
+CF优选IP自动更新脚本 (Playwright/Curl版)
+1. 每次运行前清空 Worker 中所有优选IP
+2. 从 cf.junzhen.qzz.io 获取数据
+3. 筛选: HK/KR 地区且速度 > 10M
+4. 批量通过 cfnew API 添加
 """
 
 import json
@@ -14,7 +16,6 @@ import urllib.error
 
 # ============ 配置 ============
 SOURCE_URL = "https://cf.junzhen.qzz.io/full_ips_bj.txt"
-# 用户只需配置基础 Worker URL: https://worker.dev/{UUID}
 BASE_URL = os.environ.get("CFNEW_URL", "").rstrip('/')
 API_URL = f"{BASE_URL}/api/preferred-ips"
 
@@ -30,7 +31,7 @@ def fetch_data():
         return resp.read().decode("utf-8", errors="ignore")
 
 def clear_ips():
-    print(f"🧹 正在清空旧 IP: {API_URL}")
+    print(f"🧹 正在清空旧 IP...")
     req = urllib.request.Request(API_URL, data=json.dumps({"all": True}).encode(), headers=HEADERS, method="DELETE")
     with urllib.request.urlopen(req, timeout=30) as resp:
         print(f"✅ 已清空: {resp.read().decode()}")
@@ -56,7 +57,9 @@ def main():
     raw_text = fetch_data()
     filtered_ips = []
     counters = {}
-    pattern = re.compile(r"(?P<ip>\d+\.\d+\.\d+\.\d+):(?P<port>\d+)#(?P<region>[A-Z]+)\s+\[(?P<speed>\d+)M\]")
+    
+    # 支持 [数字M] 和 [中文 by 中文 数字M] 等多种括号格式
+    pattern = re.compile(r"(?P<ip>\d+\.\d+\.\d+\.\d+):(?P<port>\d+)#(?P<region>[A-Z]+)\s+\[(?:.*? )?(?P<speed>\d+)M\]")
     
     for line in raw_text.splitlines():
         match = pattern.search(line)
