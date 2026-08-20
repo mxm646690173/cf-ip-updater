@@ -1,10 +1,8 @@
 name: CF优选IP自动更新
 
 on:
-  # 定时执行：每6小时运行一次
   schedule:
     - cron: '0 */6 * * *'
-  # 支持手动触发
   workflow_dispatch:
 
 jobs:
@@ -21,23 +19,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 安装 Playwright + Chromium
-        run: |
-          pip install playwright
-          python -m playwright install chromium
-
-      - name: 从源站获取电信优选IP并推送
+      - name: 更新优选IP
         env:
           CFNEW_URL: ${{ secrets.CFNEW_URL }}
-          CFNEW_PORT: ${{ secrets.CFNEW_PORT || '443' }}
-          WAIT_TIMEOUT: ${{ secrets.WAIT_TIMEOUT || '90' }}
         run: |
           python update_ip.py
 
-      - name: 提交状态文件（记录运行次数）
+      - name: 提交状态文件
         run: |
           git config user.name "cf-ip-updater[bot]"
           git config user.email "cf-ip-updater[bot]@users.noreply.github.com"
           git add state.json
           git diff --quiet && git diff --staged --quiet || git commit -m "chore: 更新运行状态 [skip ci]"
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+          git push
