@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-CF优选IP自动更新脚本 (Playwright/Curl版)
-1. 每次运行前清空 Worker 中所有优选IP
-2. 从 cf.junzhen.qzz.io 获取数据
+CF优选IP自动更新脚本
+1. 每次运行前清空 Worker 中所有优选IP (带重试机制)
+2. 从 cf.junzhen.qzz.io 获取数据 (兼容多种格式)
 3. 筛选: HK/KR 地区且速度 > 10M
 4. 批量通过 cfnew API 添加
 """
@@ -11,6 +11,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 import urllib.error
 
@@ -31,15 +32,25 @@ def fetch_data():
         return resp.read().decode("utf-8", errors="ignore")
 
 def clear_ips():
-    print(f"🧹 正在清空旧 IP...")
-    req = urllib.request.Request(API_URL, data=json.dumps({"all": True}).encode(), headers=HEADERS, method="DELETE")
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        print(f"✅ 已清空: {resp.read().decode()}")
+    print(f"🧹 正在清空旧 IP (带重试)...")
+    body = json.dumps({"all": True}).encode()
+    headers = {**HEADERS, "Content-Length": str(len(body))}
+    
+    for i in range(3):
+        try:
+            req = urllib.request.Request(API_URL, data=body, headers=headers, method="DELETE")
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                print(f"✅ 已清空: {resp.read().decode()}")
+                return
+        except Exception as e:
+            print(f"⚠️ 第 {i+1} 次清空失败: {e}")
+            if i < 2: time.sleep(3)
+            else: raise e
 
 def bulk_add_ips(ips_to_add):
     print(f"🚀 正在批量添加 {len(ips_to_add)} 个 IP...")
     payload = json.dumps(ips_to_add).encode()
-    req = urllib.request.Request(API_URL, data=payload, headers=HEADERS, method="POST")
+    req = urllib.request.Request(API_URL, data=payload, headers={**HEADERS, "Content-Length": str(len(payload))}, method="POST")
     with urllib.request.urlopen(req, timeout=30) as resp:
         print(f"✅ 批量添加成功: {resp.read().decode()}")
 
@@ -51,14 +62,13 @@ def main():
     try:
         clear_ips()
     except Exception as e:
-        print(f"❌ 清空失败: {e}")
+        print(f"❌ 最终清空失败: {e}")
         sys.exit(1)
 
     raw_text = fetch_data()
     filtered_ips = []
     counters = {}
     
-    # 支持 [数字M] 和 [中文 by 中文 数字M] 等多种括号格式
     pattern = re.compile(r"(?P<ip>\d+\.\d+\.\d+\.\d+):(?P<port>\d+)#(?P<region>[A-Z]+)\s+\[(?:.*? )?(?P<speed>\d+)M\]")
     
     for line in raw_text.splitlines():
